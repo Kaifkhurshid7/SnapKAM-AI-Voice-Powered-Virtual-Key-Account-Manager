@@ -7,6 +7,10 @@ import { buildSystemPrompt } from './prompt.service.js';
 /** Synthetic first user turn: Gemini requires the history to start with a user message. */
 const CALL_CONNECTED_MARKER = '[The seller has just connected to the call.]';
 
+/** Sent as the last turn when the seller hangs up, forcing the closing summary. */
+const CALL_ENDED_MARKER =
+  '[The seller has ended the call. Reply with a brief goodbye, set phase to summary and fill the summary object.]';
+
 const REQUEST_TIMEOUT_MS = 20_000;
 
 /** Structured-output schema the model must follow. */
@@ -18,11 +22,12 @@ const RESPONSE_SCHEMA = {
     summary: {
       type: Type.OBJECT,
       properties: {
+        primaryConcern: { type: Type.STRING },
         keyIssues: { type: Type.ARRAY, items: { type: Type.STRING } },
         recommendations: { type: Type.ARRAY, items: { type: Type.STRING } },
         nextSteps: { type: Type.ARRAY, items: { type: Type.STRING } },
       },
-      required: ['keyIssues', 'recommendations', 'nextSteps'],
+      required: ['primaryConcern', 'keyIssues', 'recommendations', 'nextSteps'],
     },
   },
   required: ['reply', 'phase'],
@@ -34,6 +39,7 @@ const botTurnSchema = z.object({
   phase: z.enum(['greeting', 'discovery', 'recommendation', 'summary']),
   summary: z
     .object({
+      primaryConcern: z.string().optional(),
       keyIssues: z.array(z.string()),
       recommendations: z.array(z.string()),
       nextSteps: z.array(z.string()),
@@ -78,6 +84,7 @@ export class GeminiEngine implements ConversationEngine {
         role: message.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: message.content }],
       })),
+      ...(request.endCall ? [{ role: 'user', parts: [{ text: CALL_ENDED_MARKER }] }] : []),
     ];
 
     const response = await this.client.models.generateContent({
@@ -95,12 +102,27 @@ export class GeminiEngine implements ConversationEngine {
     const text = response.text;
     if (!text) throw new Error('Gemini returned an empty response');
 
-    const turn = botTurnSchema.parse(JSON.parse(text));
+    const parsed = botTurnSchema.parse(JSON.parse(text));
+    const firstSellerMessage = request.messages.find((m) => m.role === 'user')?.content;
 
-    // Guarantee a structured summary whenever the model declares the call finished.
-    if (turn.phase === 'summary' && !turn.summary) {
-      return { ...turn, summary: buildSummary(this.diagnosis, this.data) };
-    }
-    return turn;
+    // A hang-up always ends in the summary phase, whatever phase the model reports.
+    const phase = request.endCall ? 'summary' : parsed.phase;
+    if (phase !== 'summary') return { reply: parsed.reply, phase };
+
+    // Guarantee a complete structured summary: fill anything the model omitted from the diagnosis.
+    const fallback = buildSummary(this.diagnosis, this.data, firstSellerMessage);
+    const summary = parsed.summary;
+    return {
+      reply: parsed.reply,
+      phase,
+      summary: {
+        primaryConcern: summary?.primaryConcern?.trim() || fallback.primaryConcern,
+        keyIssues: summary?.keyIssues.length ? summary.keyIssues : fallback.keyIssues,
+        recommendations: summary?.recommendations.length
+          ? summary.recommendations
+          : fallback.recommendations,
+        nextSteps: summary?.nextSteps.length ? summary.nextSteps : fallback.nextSteps,
+      },
+    };
   }
 }
