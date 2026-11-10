@@ -1,8 +1,10 @@
 import { TriangleAlert } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { BusinessHealth } from './components/BusinessHealth';
 import { Header } from './components/Header';
-import { InsightsPanel } from './components/InsightsPanel';
 import { MetricsPanel } from './components/MetricsPanel';
+import { RecommendationsPanel } from './components/RecommendationsPanel';
+import { SalesTrendChart } from './components/SalesTrendChart';
 import { SummaryCard } from './components/SummaryCard';
 import { Transcript } from './components/Transcript';
 import { VoiceStage } from './components/VoiceStage';
@@ -16,15 +18,22 @@ export default function App() {
   const [language, setLanguage] = useState<Language>('en-IN');
   const seller = useSeller();
   const call = useCall(language);
+  const summaryRef = useRef<HTMLElement>(null);
 
   const profile = seller.data?.seller ?? null;
   const diagnosis = seller.data?.diagnosis ?? null;
+  const firstName = profile?.name.split(' ')[0] ?? null;
+
+  // Bring the summary into view as soon as it is ready.
+  useEffect(() => {
+    if (call.summary) summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [call.summary]);
 
   return (
     <div className="min-h-screen">
       <Header theme={theme} onToggleTheme={toggleTheme} storeName={profile?.storeName ?? null} />
 
-      <main className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto max-w-[1400px] space-y-8 px-4 py-6 sm:px-6 sm:py-8">
         {!call.micSupported && (
           <div
             role="status"
@@ -38,26 +47,24 @@ export default function App() {
           </div>
         )}
 
-        <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
           <VoiceStage
             call={call}
-            sellerName={profile?.name.split(' ')[0] ?? null}
+            sellerName={firstName}
             language={language}
             onLanguageChange={setLanguage}
           />
-          <Transcript messages={call.messages} sellerName={profile?.name.split(' ')[0] ?? null} />
+          <Transcript messages={call.messages} sellerName={firstName} status={call.status} />
         </div>
 
-        {call.summary && <SummaryCard summary={call.summary} />}
-
-        <section aria-labelledby="snapshot-title" className="space-y-4">
+        <section aria-labelledby="snapshot-title" className="space-y-5">
           <div>
-            <h2 id="snapshot-title" className="text-lg font-semibold">
+            <h2 id="snapshot-title" className="text-xl font-semibold tracking-tight">
               Account snapshot
             </h2>
             <p className="text-sm text-muted">
-              Mock data for {profile?.storeName ?? 'the seller'}, comparing this month with last
-              month.
+              This month&apos;s performance compared with last month
+              {profile ? ` for ${profile.storeName}` : ''} (mock data).
             </p>
           </div>
 
@@ -67,13 +74,22 @@ export default function App() {
               {seller.error} Make sure the server is running.
             </p>
           )}
-          {diagnosis && (
+
+          {diagnosis && seller.data && (
             <>
               <MetricsPanel metrics={diagnosis.metrics} />
-              <InsightsPanel headline={diagnosis.headline} insights={diagnosis.insights} />
+              <div className="grid gap-6 lg:grid-cols-2">
+                <SalesTrendChart weeklySales={seller.data.weeklySales} />
+                <BusinessHealth headline={diagnosis.headline} insights={diagnosis.insights} />
+              </div>
             </>
           )}
         </section>
+
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+          {diagnosis && <RecommendationsPanel recommendations={diagnosis.recommendations} />}
+          <SummaryCard ref={summaryRef} summary={call.summary} loading={call.summarizing} />
+        </div>
 
         <footer className="pb-4 text-center text-xs text-muted">
           SnapKAM uses mock seller data for demonstration purposes only.
