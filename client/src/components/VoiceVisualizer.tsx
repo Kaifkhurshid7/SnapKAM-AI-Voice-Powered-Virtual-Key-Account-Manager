@@ -17,7 +17,15 @@ const ENVELOPE = Array.from({ length: BARS_PER_SIDE }, (_, i) => {
   return 0.25 + 0.75 * Math.exp(-3 * t * t);
 });
 
-function Bars({ mode, level, mirrored }: { mode: VisualizerMode; level: number; mirrored: boolean }) {
+function Bars({
+  mode,
+  level,
+  mirrored,
+}: {
+  mode: VisualizerMode;
+  level: number;
+  mirrored: boolean;
+}) {
   const order = mirrored ? [...ENVELOPE].reverse() : ENVELOPE;
 
   return (

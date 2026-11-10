@@ -53,10 +53,7 @@ export function VoiceOrb({ status, muted, onClick, disabled }: VoiceOrbProps) {
         />
       )}
 
-      <span
-        aria-hidden="true"
-        className="absolute inset-6 rounded-full bg-brand/15 blur-2xl"
-      />
+      <span aria-hidden="true" className="absolute inset-6 rounded-full bg-brand/15 blur-2xl" />
 
       <button
         type="button"
