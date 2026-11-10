@@ -39,4 +39,26 @@ describe('diagnosis', () => {
     expect(recommendations.length).toBeGreaterThanOrEqual(2);
     expect(recommendations.length).toBeLessThanOrEqual(3);
   });
+
+  it('describes each recommendation with problem, impact, action and priority', async () => {
+    const { recommendations } = diagnose(await loadSellerData());
+    for (const rec of recommendations) {
+      expect(rec.problem.length).toBeGreaterThan(0);
+      expect(rec.impact.length).toBeGreaterThan(0);
+      expect(rec.action.length).toBeGreaterThan(0);
+      expect(['high', 'medium', 'low']).toContain(rec.priority);
+    }
+    expect(recommendations.map((r) => r.id).sort()).toEqual([
+      'cancellations',
+      'inventory',
+      'orders',
+    ]);
+  });
+
+  it('keeps weekly sales consistent with the monthly totals', async () => {
+    const data = await loadSellerData();
+    const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
+    expect(sum(data.weeklySales.lastMonth)).toBe(data.metrics.sales.lastMonth);
+    expect(sum(data.weeklySales.thisMonth)).toBe(data.metrics.sales.thisMonth);
+  });
 });
