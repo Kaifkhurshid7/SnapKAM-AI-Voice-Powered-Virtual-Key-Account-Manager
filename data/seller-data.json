@@ -1,0 +1,11 @@
+{
+  "currency": "INR",
+  "note": "Mock data from the assignment brief. No real Snapdeal data.",
+  "metrics": {
+    "sales": { "lastMonth": 200000, "thisMonth": 135000 },
+    "orders": { "lastMonth": 400, "thisMonth": 270 },
+    "cancellationRatePercent": { "lastMonth": 8, "thisMonth": 14 },
+    "averageSellingPrice": { "lastMonth": 500, "thisMonth": 500 },
+    "outOfStockProducts": { "lastMonth": 5, "thisMonth": 18 }
+  }
+}
