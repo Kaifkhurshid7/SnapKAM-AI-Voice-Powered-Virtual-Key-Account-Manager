@@ -14,6 +14,10 @@ The assignment brief allows reasonable assumptions as long as they are stated. T
 - "Extra cancelled orders" is estimated as this month's orders multiplied by the rise in cancellation rate (270 x 6% = about 16 orders), valued at the average selling price (about ₹8,000). It is an estimate, not a measured loss.
 - Month-over-month changes of less than 2% are treated as "flat".
 
+## Weekly sales chart
+
+- The brief gives monthly totals only. The week-by-week split (last month 50,000 per week; this month 42,000, 36,000, 30,000 and 27,000) is **illustrative**, chosen so the weeks sum to the monthly totals. It is used only for the dashboard chart and is never given to the assistant or used in the diagnosis.
+
 ## Visibility
 
 - The dataset contains no impressions, traffic or search-rank data. "Low visibility" is therefore an **inference**: orders fell while price stayed flat, and stock-outs and cancellations are known to hurt marketplace ranking. The bot is instructed to present it as a likely effect and to ask the seller about promotions and search position.
