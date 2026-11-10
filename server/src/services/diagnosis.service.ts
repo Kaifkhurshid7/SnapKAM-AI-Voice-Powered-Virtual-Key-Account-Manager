@@ -160,24 +160,65 @@ function buildInsights(data: SellerData): Insight[] {
   return insights.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
 }
 
-function buildRecommendations(data: SellerData): Recommendation[] {
-  const { metrics } = data;
-  const extraOos = metrics.outOfStockProducts.thisMonth - metrics.outOfStockProducts.lastMonth;
-  return [
+/** Map a percentage drop to a priority: bigger drops need attention sooner. */
+function priorityFromDrop(dropPercent: number): Severity {
+  if (dropPercent >= 30) return 'high';
+  return dropPercent >= 10 ? 'medium' : 'low';
+}
+
+/**
+ * Turn the findings into prioritised recommendations. Each one states the problem, its business
+ * impact and a concrete action, so the dashboard and the spoken advice stay consistent.
+ */
+function buildRecommendations(data: SellerData, insights: Insight[]): Recommendation[] {
+  const { metrics, seller } = data;
+  const severityOf = (id: Insight['id']): Severity =>
+    insights.find((insight) => insight.id === id)?.severity ?? 'low';
+
+  const oos = metrics.outOfStockProducts;
+  const oosShare = round((oos.thisMonth / seller.activeListings) * 100, 0);
+
+  const cancel = metrics.cancellationRatePercent;
+  const extraCancelled = Math.round(
+    (metrics.orders.thisMonth * (cancel.thisMonth - cancel.lastMonth)) / 100,
+  );
+  const lostRevenue = extraCancelled * metrics.averageSellingPrice.thisMonth;
+
+  const orders = metrics.orders;
+  const orderDrop = Math.abs(percentChange(orders.lastMonth, orders.thisMonth) ?? 0);
+  const salesLost = metrics.sales.lastMonth - metrics.sales.thisMonth;
+
+  const recommendations: Recommendation[] = [
     {
+      id: 'inventory',
       title: 'Restock your best sellers first',
-      detail: `You have ${extraOos} more products out of stock than last month. Rank them by past sales, restock the top ones this week, and set a low-stock alert so you reorder before you run out. Temporarily deactivate items you cannot restock soon.`,
+      problem: `Out-of-stock products rose from ${oos.lastMonth} to ${oos.thisMonth}.`,
+      impact: `About ${oosShare}% of your listings cannot sell, which loses orders and lowers search ranking.`,
+      action:
+        'Rank out-of-stock items by past sales and restock the top ones within 2-3 days. Set low-stock alerts, and deactivate items you cannot restock soon.',
+      priority: severityOf('inventory'),
     },
     {
+      id: 'cancellations',
       title: 'Bring cancellations back towards 8 percent',
-      detail: `Cancellations rose to ${metrics.cancellationRatePercent.thisMonth} percent. Check the cancellation reasons in your seller panel, keep stock counts accurate so you never accept orders you cannot fulfil, and dispatch within the promised handling time.`,
+      problem: `Cancellation rate rose from ${cancel.lastMonth}% to ${cancel.thisMonth}%.`,
+      impact: `Roughly ${extraCancelled} extra cancelled orders, about ${formatInr(lostRevenue)} of lost revenue, plus a weaker seller rating.`,
+      action:
+        'Review cancellation reasons in your seller panel, keep stock counts accurate so you never accept orders you cannot fulfil, and dispatch within the promised handling time.',
+      priority: severityOf('cancellations'),
     },
     {
+      id: 'orders',
       title: 'Rebuild visibility once stock is back',
-      detail:
-        'After restocking, promote your top products with a deal or sponsored listing, refresh titles and images, and compare your prices with similar listings so recovering products win back search ranking.',
+      problem: `Orders fell ${orderDrop}% (${orders.lastMonth} to ${orders.thisMonth}) at an unchanged price.`,
+      impact: `Sales are down ${formatInr(salesLost)} month over month, pointing to fewer buyers reaching your listings.`,
+      action:
+        'After restocking, run a deal or sponsored listing on your top products, refresh titles and images, and compare prices with similar listings.',
+      priority: priorityFromDrop(orderDrop),
     },
   ];
+
+  return recommendations.sort((a, b) => SEVERITY_RANK[a.priority] - SEVERITY_RANK[b.priority]);
 }
 
 /**
@@ -195,10 +236,12 @@ export function diagnose(data: SellerData): Diagnosis {
     `Sales fell ${Math.abs(salesChange)}% (${formatInr(sales.lastMonth)} to ${formatInr(sales.thisMonth)}), ` +
     `driven by ${Math.abs(ordersChange)}% fewer orders at an unchanged average price.`;
 
+  const insights = buildInsights(data);
+
   return {
     headline,
     metrics,
-    insights: buildInsights(data),
-    recommendations: buildRecommendations(data),
+    insights,
+    recommendations: buildRecommendations(data, insights),
   };
 }
