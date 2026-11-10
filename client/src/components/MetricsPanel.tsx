@@ -1,5 +1,15 @@
 import clsx from 'clsx';
-import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Ban,
+  IndianRupee,
+  Minus,
+  PackageX,
+  ShoppingCart,
+  Tag,
+  type LucideIcon,
+} from 'lucide-react';
 import { formatChange, formatMetricValue } from '../lib/format';
 import type { MetricComparison } from '../types/api';
 
@@ -15,29 +25,42 @@ const BAR_STYLES = {
   neutral: 'bg-muted',
 } as const;
 
+const METRIC_ICONS: Record<string, LucideIcon> = {
+  sales: IndianRupee,
+  orders: ShoppingCart,
+  cancellationRatePercent: Ban,
+  averageSellingPrice: Tag,
+  outOfStockProducts: PackageX,
+};
+
 function MetricCard({ metric }: { metric: MetricComparison }) {
-  const Icon =
+  const TrendIcon =
     metric.direction === 'up' ? ArrowUpRight : metric.direction === 'down' ? ArrowDownRight : Minus;
+  const MetricIcon = METRIC_ICONS[metric.key] ?? Tag;
   const max = Math.max(metric.lastMonth, metric.thisMonth, 1);
 
   return (
-    <article className="shadow-card flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-sm font-medium text-muted">{metric.label}</h3>
-        <span
-          className={clsx(
-            'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold',
-            SENTIMENT_STYLES[metric.sentiment],
-          )}
-        >
-          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-          {formatChange(metric)}
+    <article className="shadow-card flex flex-col gap-3 rounded-[20px] border border-line bg-card p-4 transition hover:-translate-y-0.5 hover:border-brand/50">
+      <div className="flex items-center gap-2 text-muted">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-card-muted text-brand">
+          <MetricIcon className="h-4 w-4" aria-hidden="true" />
         </span>
+        <h3 className="text-sm font-medium">{metric.label}</h3>
       </div>
 
       <p className="text-2xl font-semibold tracking-tight">
         {formatMetricValue(metric.thisMonth, metric.unit)}
       </p>
+
+      <span
+        className={clsx(
+          'inline-flex w-fit items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold',
+          SENTIMENT_STYLES[metric.sentiment],
+        )}
+      >
+        <TrendIcon className="h-3.5 w-3.5" aria-hidden="true" />
+        {formatChange(metric)}
+      </span>
 
       {/* Last month vs this month, scaled to the larger of the two. */}
       <div className="space-y-1.5" aria-hidden="true">
@@ -56,7 +79,7 @@ function MetricCard({ metric }: { metric: MetricComparison }) {
       </div>
 
       <p className="text-xs text-muted">
-        Last month: {formatMetricValue(metric.lastMonth, metric.unit)}
+        vs {formatMetricValue(metric.lastMonth, metric.unit)} last month
       </p>
     </article>
   );
