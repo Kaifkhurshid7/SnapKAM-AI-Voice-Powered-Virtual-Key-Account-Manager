@@ -1,11 +1,21 @@
 {
+  "note": "Mock data only. Monthly metrics come from the assignment brief; the seller profile and weekly split are assumptions (see docs/assumptions.md).",
   "currency": "INR",
-  "note": "Mock data from the assignment brief. No real Snapdeal data.",
+  "seller": {
+    "name": "Aarav Sharma",
+    "storeName": "Sharma Home & Kitchen",
+    "category": "Home & Kitchen",
+    "activeListings": 60
+  },
   "metrics": {
     "sales": { "lastMonth": 200000, "thisMonth": 135000 },
     "orders": { "lastMonth": 400, "thisMonth": 270 },
     "cancellationRatePercent": { "lastMonth": 8, "thisMonth": 14 },
     "averageSellingPrice": { "lastMonth": 500, "thisMonth": 500 },
     "outOfStockProducts": { "lastMonth": 5, "thisMonth": 18 }
+  },
+  "weeklySales": {
+    "lastMonth": [50000, 50000, 50000, 50000],
+    "thisMonth": [42000, 36000, 30000, 27000]
   }
 }

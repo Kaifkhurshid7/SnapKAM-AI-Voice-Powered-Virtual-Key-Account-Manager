@@ -23,7 +23,8 @@ SnapKAM is a TypeScript monorepo with two npm workspaces: a React single-page ap
 2. The reply is spoken with the browser's speech synthesis.
 3. When speech ends, the microphone opens automatically (hands-free). The seller can also tap the orb to interrupt the bot, or type a reply.
 4. The final transcript is appended to the history and posted to `/api/chat`. The server is **stateless**: the client sends the full history each turn.
-5. The loop repeats through the phases `greeting`, `discovery`, `recommendation` and `summary`. When the bot returns the `summary` phase, it also returns a structured summary and the client shows the summary card.
+5. If the seller hangs up before the bot finishes, the client calls `/api/chat` with `endCall: true` and the server returns the closing summary immediately.
+6. The loop repeats through the phases `greeting`, `discovery`, `recommendation` and `summary`. When the bot returns the `summary` phase, it also returns a structured summary and the client shows the summary card.
 
 ## Server
 
