@@ -53,6 +53,23 @@ describe('HTTP API', () => {
     expect(body).toMatchObject({ phase: 'greeting', engine: 'rule-based' });
   });
 
+  it('returns weekly sales for the dashboard chart', async () => {
+    const res = await fetch(`${baseUrl}/api/seller`);
+    const body = (await res.json()) as { weeklySales: { thisMonth: number[] } };
+    expect(body.weeklySales.thisMonth).toHaveLength(4);
+  });
+
+  it('returns the summary when the seller ends the call', async () => {
+    const res = await postChat({
+      messages: [{ role: 'user', content: 'my sales dropped' }],
+      language: 'en-IN',
+      endCall: true,
+    });
+    const body = (await res.json()) as { phase: string; summary?: { primaryConcern: string } };
+    expect(body.phase).toBe('summary');
+    expect(body.summary?.primaryConcern).toBe('my sales dropped');
+  });
+
   it('rejects malformed chat requests', async () => {
     const res = await postChat({ messages: [{ role: 'user', content: '' }] });
     expect(res.status).toBe(400);

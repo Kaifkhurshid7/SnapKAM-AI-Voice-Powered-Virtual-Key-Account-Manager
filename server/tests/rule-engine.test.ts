@@ -66,6 +66,29 @@ describe('RuleBasedEngine', () => {
     expect(turn.summary?.nextSteps.length).toBeGreaterThan(0);
   });
 
+  it('captures the primary concern in the summary', async () => {
+    const turn = await engine.respond({
+      messages: transcript('My sales have dropped a lot', 'out of stock', 'thanks, bye'),
+      language: 'en-IN',
+    });
+    expect(turn.summary?.primaryConcern).toBe('My sales have dropped a lot');
+  });
+
+  it('returns a summary immediately when the seller hangs up', async () => {
+    const turn = await engine.respond({
+      messages: transcript('sales dropped'),
+      language: 'en-IN',
+      endCall: true,
+    });
+    expect(turn.phase).toBe('summary');
+    expect(turn.summary?.primaryConcern).toBe('sales dropped');
+  });
+
+  it('falls back to a default concern when the seller never spoke', async () => {
+    const turn = await engine.respond({ messages: [], language: 'en-IN', endCall: true });
+    expect(turn.summary?.primaryConcern).toMatch(/sales/i);
+  });
+
   it('does not end the call on a wrap-up phrase before discovery has started', async () => {
     const turn = await engine.respond({
       messages: transcript('thanks'),

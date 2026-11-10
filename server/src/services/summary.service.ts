@@ -9,7 +9,9 @@ const MAX_CONCERN_LENGTH = 200;
 function toConcern(text: string | undefined): string {
   const cleaned = text?.replace(/\s+/g, ' ').trim();
   if (!cleaned) return DEFAULT_CONCERN;
-  return cleaned.length > MAX_CONCERN_LENGTH ? `${cleaned.slice(0, MAX_CONCERN_LENGTH - 1)}…` : cleaned;
+  return cleaned.length > MAX_CONCERN_LENGTH
+    ? `${cleaned.slice(0, MAX_CONCERN_LENGTH - 1)}…`
+    : cleaned;
 }
 
 /**

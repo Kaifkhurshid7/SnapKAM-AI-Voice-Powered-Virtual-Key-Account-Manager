@@ -24,6 +24,10 @@ const sellerDataSchema = z.object({
     averageSellingPrice: periodSchema,
     outOfStockProducts: periodSchema,
   }),
+  weeklySales: z.object({
+    lastMonth: z.array(z.number().nonnegative()).length(4),
+    thisMonth: z.array(z.number().nonnegative()).length(4),
+  }),
 });
 
 let cached: SellerData | undefined;

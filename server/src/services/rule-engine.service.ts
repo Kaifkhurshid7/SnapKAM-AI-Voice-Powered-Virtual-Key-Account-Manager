@@ -55,12 +55,13 @@ export class RuleBasedEngine implements ConversationEngine {
     const turn = userTurns.length;
     const lastAnswer = userTurns.at(-1)?.content ?? '';
 
+    if (request.endCall) return this.summary(userTurns[0]?.content);
     if (turn === 0) return this.greeting();
     if (
       turn >= SUMMARY_TURN ||
       (turn >= EARLIEST_WRAP_UP_TURN && WRAP_UP_PATTERN.test(lastAnswer))
     ) {
-      return this.summary();
+      return this.summary(userTurns[0]?.content);
     }
 
     switch (turn) {
@@ -73,7 +74,7 @@ export class RuleBasedEngine implements ConversationEngine {
       case RECOMMENDATION_TURN:
         return this.recommend(lastAnswer);
       default:
-        return this.summary();
+        return this.summary(userTurns[0]?.content);
     }
   }
 
@@ -124,8 +125,8 @@ export class RuleBasedEngine implements ConversationEngine {
     };
   }
 
-  private summary(): BotTurn {
-    const summary = buildSummary(this.diagnosis, this.data);
+  private summary(sellerConcern?: string): BotTurn {
+    const summary = buildSummary(this.diagnosis, this.data, sellerConcern);
     return {
       phase: 'summary',
       summary,
